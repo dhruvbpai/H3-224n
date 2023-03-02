@@ -2,7 +2,7 @@ import argparse
 
 import torch
 
-from tqdm import tqdm
+from tqdm import trange
 
 import numpy as np
 
@@ -66,7 +66,7 @@ with open(args.examples, "r") as corp, open(args.labels) as targ:
 unique_labels=np.unique(labels)
 preds = np.zeros(args.iters)
 targs = np.zeros(args.iters)
-for iter in tqdm(args.iters):
+for iter in trange(args.iters):
     sample = np.random.permutation(np.stack((data, labels)))[:args.size+1]
     targ_x, targ_y = sample[-1]
     input_x, input_y = sample[:args.size]
