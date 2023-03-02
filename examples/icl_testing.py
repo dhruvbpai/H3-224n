@@ -62,12 +62,12 @@ for name, module in model.named_modules():
 with open(args.examples, "r") as corp, open(args.labels) as targ:
     data = np.array(corp.read().split("\n")) # Change this based on how annoying your files are
     labels = np.array(targ.read().split("\n"))
-
+print(data.shape,labels.shape)
 unique_labels=np.unique(labels)
 preds = np.zeros(args.iters)
 targs = np.zeros(args.iters)
 for iter in trange(args.iters):
-    sample = np.random.permutation(np.stack((data, labels[:data.shape[0]])))[:args.size+1]
+    sample = np.random.permutation(np.stack((data, labels)))[:args.size+1]
     targ_x, targ_y = sample[-1]
     input_x, input_y = sample[:args.size]
     prompt = '\n'.join(["%s %s %s" % (input_x[i], args.separator,input_y[i]) for i in range(len(input_x))])
