@@ -80,4 +80,4 @@ for iter in tqdm(args.iters):
     targs[iter] = np.where(unique_labels == targ_y, unique_labels)
 
 # Post processing nonsense
-np.savetxt(args.out_path, np.stack([preds, targs]))
+np.savetxt(args.out_path+"out.txt", np.stack([preds, targs]))
