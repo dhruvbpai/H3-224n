@@ -67,10 +67,13 @@ unique_labels=np.unique(labels)
 preds = np.zeros(args.iters)
 targs = np.zeros(args.iters)
 for j in tqdm(range(args.iters)):
-    sample = np.random.permutation(np.stack((data, labels)))[:args.size+1]
+    sample = np.stack((data, labels)).T
+    np.random.shuffle(sample)
+    sample = sample[:args.size]
     targ_x, targ_y = sample[-1]
-    input_x, input_y = sample[:args.size]
-    prompt = '\n'.join(["%s %s %s" % (input_x[i], args.separator,input_y[i]) for i in range(len(input_x))])
+    input_x = sample[:args.size, 0]
+    input_y = sample[:args.size, 1]
+    prompt = '\n'.join(["%s %s %s" % (input_x[i], args.separator,input_y[i]) for i in range(len(input_x))])+"\n"
     prompt += args.query.replace("<QUERY>", targ_x)
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device=device)
     out = model.forward(input_ids=input_ids)
