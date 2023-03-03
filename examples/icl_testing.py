@@ -58,7 +58,7 @@ for name, module in model.named_modules():
         module.to(dtype=dtype)
 
 
-# Load examples and labels
+# Load data
 with open(args.examples, "r") as corp, open(args.labels) as targ:
     data = np.array(corp.read().split("\n"))[:-1] # Change this based on how annoying your files are
     labels = np.array(targ.read().split("\n"))[:-1]
@@ -74,23 +74,23 @@ for j in tqdm(range(args.iters)):
     sample = samples[:args.size]
     targ_x, targ_y = sample[-1]
     input_x = sample[:args.size, 0]
-    input_y = sample[:args.size, 1
+    input_y = sample[:args.size, 1]
 
-    # ICL Prompt Design
+    # ICL Prompting
     prompt = '\n'.join(["%s %s %s" % (input_x[i], args.separator,input_y[i]) for i in range(len(input_x))])+"\n"
     prompt += args.query.replace("<QUERY>", targ_x)
 
-    # Run Inference
+    # Perform Inference
+    input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device=device)
     with torch.inference_mode():
-        logits = model(input_ids=input_ids).logits[:, -1].squeeze()
+      logits = model(input_ids=input_ids).logits[:,-1].squeeze()
     preds = [logits[word_maps.index(label)].cpu() for label in unique_labels]
-
-    preds = [logits[word_maps.index(label)] for label in unique_labels]
     predictions[j] = np.argmax(preds)
     targs[j] = np.where(unique_labels == targ_y)[0][0]
 
+    # Free up space
     del logits
     del sample
 
 # Post processing output
-np.savetxt(args.out_path+"out.csv", np.stack([preds, targs]).T, delimiter=",", header="predictions, labels")
+np.savetxt(args.out_path+"out.csv", np.stack([predictions, targs]).T, delimiter=",", header=",".join(unique_labels))
