@@ -93,4 +93,4 @@ for j in tqdm(range(args.iters)):
     del sample
 
 # Post processing output
-np.savetxt(args.out_path+"out.csv", np.stack([predictions, targs]).T, delimiter=",", header=",".join(unique_labels))
+np.savetxt(args.out_path+"out_%s_%s.csv"%(args.size, args.iters), np.stack([predictions, targs]).T, delimiter=",", header=",".join(unique_labels))
