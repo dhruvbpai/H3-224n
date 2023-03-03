@@ -58,7 +58,7 @@ for name, module in model.named_modules():
         module.to(dtype=dtype)
 
 
-
+# Load examples and labels
 with open(args.examples, "r") as corp, open(args.labels) as targ:
     data = np.array(corp.read().split("\n"))[:-1] # Change this based on how annoying your files are
     labels = np.array(targ.read().split("\n"))[:-1]
@@ -66,21 +66,29 @@ with open(args.examples, "r") as corp, open(args.labels) as targ:
 unique_labels=np.unique(labels)
 preds = np.zeros(args.iters)
 targs = np.zeros(args.iters)
+word_maps = tokenizer.batch_decode([i for i in range(50000)])
 for j in tqdm(range(args.iters)):
+    # Sampling
     sample = np.stack((data, labels)).T
     np.random.shuffle(sample)
     sample = sample[:args.size]
     targ_x, targ_y = sample[-1]
     input_x = sample[:args.size, 0]
     input_y = sample[:args.size, 1]
+
+    # ICL Prompt Design
     prompt = '\n'.join(["%s %s %s" % (input_x[i], args.separator,input_y[i]) for i in range(len(input_x))])+"\n"
     prompt += args.query.replace("<QUERY>", targ_x)
-    input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device=device)
-    out = model.forward(input_ids=input_ids)
-    logits = getattr('CausalLMOutput', out)
-    preds = [logits[label] for label in unique_labels]
-    preds[j] = np.where(preds == np.max(preds), preds)
-    targs[j] = np.where(unique_labels == targ_y, unique_labels)
 
-# Post processing nonsense
-np.savetxt(args.out_path+"out.txt", np.stack([preds, targs]))
+    # Run Inference
+    input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device=device)
+    with torch.inference_mode():
+      logits = model(input_ids=input_ids).logits[:,-1].squeeze().cpu()
+    preds = [logits[word_maps.index(label)] for label in unique_labels]
+    print(preds, np.argmax(preds), targ_y, np.where(unique_labels == targ_y)[0][0], unique_labels)
+    preds[j] = np.argmax(preds)
+    targs[j] = np.where(unique_labels == targ_y)[0][0]
+print(preds.shape, targs.shape)
+
+# Post processing output
+np.savetxt(args.out_path+"out.csv", np.stack([preds, targs]).T, delimiter=",", header=",".join(unique_labels))
