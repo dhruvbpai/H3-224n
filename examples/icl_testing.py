@@ -64,31 +64,33 @@ with open(args.examples, "r") as corp, open(args.labels) as targ:
     labels = np.array(targ.read().split("\n"))[:-1]
 
 unique_labels=np.unique(labels)
-preds = np.zeros(args.iters)
+predictions = np.zeros(args.iters)
 targs = np.zeros(args.iters)
 word_maps = tokenizer.batch_decode([i for i in range(50000)])
+samples = np.stack((data, labels)).T
 for j in tqdm(range(args.iters)):
     # Sampling
-    sample = np.stack((data, labels)).T
-    np.random.shuffle(sample)
-    sample = sample[:args.size]
+    np.random.shuffle(samples)
+    sample = samples[:args.size]
     targ_x, targ_y = sample[-1]
     input_x = sample[:args.size, 0]
-    input_y = sample[:args.size, 1]
+    input_y = sample[:args.size, 1
 
     # ICL Prompt Design
     prompt = '\n'.join(["%s %s %s" % (input_x[i], args.separator,input_y[i]) for i in range(len(input_x))])+"\n"
     prompt += args.query.replace("<QUERY>", targ_x)
 
     # Run Inference
-    input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device=device)
     with torch.inference_mode():
-      logits = model(input_ids=input_ids).logits[:,-1].squeeze().cpu()
+        logits = model(input_ids=input_ids).logits[:, -1].squeeze()
+    preds = [logits[word_maps.index(label)].cpu() for label in unique_labels]
+
     preds = [logits[word_maps.index(label)] for label in unique_labels]
-    print(preds, np.argmax(preds), targ_y, np.where(unique_labels == targ_y)[0][0], unique_labels)
-    preds[j] = np.argmax(preds)
+    predictions[j] = np.argmax(preds)
     targs[j] = np.where(unique_labels == targ_y)[0][0]
-print(preds.shape, targs.shape)
+
+    del logits
+    del sample
 
 # Post processing output
-np.savetxt(args.out_path+"out.csv", np.stack([preds, targs]).T, delimiter=",", header=",".join(unique_labels))
+np.savetxt(args.out_path+"out.csv", np.stack([preds, targs]).T, delimiter=",", header="predictions, labels")
