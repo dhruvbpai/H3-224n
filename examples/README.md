@@ -1,3 +1,9 @@
+# Running ICL Inference examples
+Basic command to run ICL testing
+```
+!PYTHONPATH=$(pwd)/H3-224n python H3-224n/examples/icl_testing.py --ckpt H3-1.3B/model.pt  --dmodel 2048 --nlayer 24 --attn-layer-idx 8 16 --nheads 16 --examples drive/MyDrive/h3/'QQP Dataset'/examples.txt --labels drive/MyDrive/h3/'QQP Dataset'/labels.txt --separator " is " --query "Are the following the same or different: <QUERY>" --size 10 --iters 10 --out_path "./" 
+```
+
 # Loading and Running H3 Models
 
 You can use the `generate_text_h3.py` script to generate outputs from our H3 models.
