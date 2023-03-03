@@ -2,7 +2,7 @@ import argparse
 
 import torch
 
-from tqdm import trange
+from tqdm import tqdm
 
 import numpy as np
 
@@ -60,13 +60,13 @@ for name, module in model.named_modules():
 
 
 with open(args.examples, "r") as corp, open(args.labels) as targ:
-    data = np.array(corp.read().split("\n")) # Change this based on how annoying your files are
-    labels = np.array(targ.read().split("\n"))
-print(data.shape,labels.shape)
+    data = np.array(corp.read().split("\n"))[:-1] # Change this based on how annoying your files are
+    labels = np.array(targ.read().split("\n"))[:-1]
+
 unique_labels=np.unique(labels)
 preds = np.zeros(args.iters)
 targs = np.zeros(args.iters)
-for iter in trange(args.iters):
+for j in tqdm(range(args.iters)):
     sample = np.random.permutation(np.stack((data, labels)))[:args.size+1]
     targ_x, targ_y = sample[-1]
     input_x, input_y = sample[:args.size]
@@ -76,8 +76,8 @@ for iter in trange(args.iters):
     out = model.forward(input_ids=input_ids)
     logits = getattr('CausalLMOutput', out)
     preds = [logits[label] for label in unique_labels]
-    preds[iter] = np.where(preds == np.max(preds), preds)
-    targs[iter] = np.where(unique_labels == targ_y, unique_labels)
+    preds[j] = np.where(preds == np.max(preds), preds)
+    targs[j] = np.where(unique_labels == targ_y, unique_labels)
 
 # Post processing nonsense
 np.savetxt(args.out_path+"out.txt", np.stack([preds, targs]))
