@@ -24,7 +24,7 @@ parser.add_argument('--separator', type=str, default=" is ", help="ICL separator
 parser.add_argument('--query', type=str, default="What is <QUERY>?")
 parser.add_argument('--size', type=int, default = 3, help="Size of ICL shot learning")
 parser.add_argument('--iters', type=int, default = 1, help ="Number of times to run ICL")
-parser.add_argument('--noise', type=int, default = 0, help ="Percentage of labels to flip")
+parser.add_argument('--noise', type=float, default = 0, help ="Percentage of labels to flip")
 parser.add_argument('--out_path', type=str, help ="Where to save ICL dataset")
 args = parser.parse_args()
 
