@@ -58,6 +58,15 @@ for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear, torch.nn.Embedding, torch.nn.LayerNorm)):
         module.to(dtype=dtype)
 
+# TODO: Refactor these
+def cross_entropy_loss(yHat, y):
+    if y == 1:
+      return -np.log(yHat)
+    else:
+      return -np.log(1 - yHat)
+
+def normalize_probs(probs):
+    return probs * (1/np.sum(probs))
 
 # Load data
 with open(args.examples, "r") as corp, open(args.labels) as targ:
@@ -67,6 +76,7 @@ with open(args.examples, "r") as corp, open(args.labels) as targ:
 unique_labels=np.unique(labels)
 predictions = np.zeros(args.iters)
 targs = np.zeros(args.iters)
+ces = np.zeros(args.iters)
 word_maps = tokenizer.batch_decode([i for i in range(50000)])
 samples = np.stack((data, labels)).T
 
@@ -100,12 +110,17 @@ for j in tqdm(range(args.iters)):
     with torch.inference_mode():
       logits = model(input_ids=input_ids).logits[:,-1].squeeze()
     preds = [logits[word_maps.index(label)].cpu() for label in unique_labels]
+    normalized_logits = normalized_probs(preds)
+    label_val = np.where(unique_labels == targ_y)[0][0]
     predictions[j] = np.argmax(preds)
-    targs[j] = np.where(unique_labels == targ_y)[0][0]
-
+    targs[j] = label_val
+    ces[j] = cross_entropy_loss(normalized_logits[1], label_val)
     # Free up space
     del logits
     del sample
 
 # Post processing output
-np.savetxt(args.out_path+"out_%s_%s.csv"%(args.size, args.iters), np.stack([predictions, targs]).T, delimiter=",", header=",".join(unique_labels))
+if args.noise  > 0:
+    np.savetxt(args.out_path+"noisy_%s_%s_%s.csv"%(args.size, args.iters, args.noise), np.stack([predictions, targs, ces]).T, delimiter=",", header=",".join(["Predictions, Labels, Cross-entropy"]))
+else:
+    np.savetxt(args.out_path+"default_%s_%s.csv"%(args.size, args.iters), np.stack([predictions, targs, ces]).T, delimiter=",", header=",".join(["Predictions, Labels, Cross-entropyg"]))
