@@ -24,6 +24,7 @@ parser.add_argument('--separator', type=str, default=" is ", help="ICL separator
 parser.add_argument('--query', type=str, default="What is <QUERY>?")
 parser.add_argument('--size', type=int, default = 3, help="Size of ICL shot learning")
 parser.add_argument('--iters', type=int, default = 1, help ="Number of times to run ICL")
+parser.add_argument('--noise', type=int, default = 0, help ="Percentage of labels to flip")
 parser.add_argument('--out_path', type=str, help ="Where to save ICL dataset")
 args = parser.parse_args()
 
@@ -68,6 +69,14 @@ predictions = np.zeros(args.iters)
 targs = np.zeros(args.iters)
 word_maps = tokenizer.batch_decode([i for i in range(50000)])
 samples = np.stack((data, labels)).T
+
+# For noising
+noise_amount = int(args.noise*args.size)
+idxs = np.array(list(range(args.size)))
+
+def flip_label(targ, labels):
+    return labels[(np.where(labels == targ)[0][0]+1)%labels.shape[0]]
+
 for j in tqdm(range(args.iters)):
     # Sampling
     np.random.shuffle(samples)
@@ -75,6 +84,12 @@ for j in tqdm(range(args.iters)):
     targ_x, targ_y = sample[-1]
     input_x = sample[:args.size, 0]
     input_y = sample[:args.size, 1]
+
+    # Add Label Noising
+    if noise_amount > 0:
+        np.random.shuffle(idxs)
+        for idx in idxs[:noise_amount]:
+            input_y[idx] = flip_label(input_y[idx], unique_labels)
 
     # ICL Prompting
     prompt = '\n'.join(["%s %s %s" % (input_x[i], args.separator,input_y[i]) for i in range(len(input_x))])+"\n"

@@ -63,6 +63,7 @@ def cross_entropy_loss(yHat, y):
       return -np.log(yHat)
     else:
       return -np.log(1 - yHat)
+
 def normalize_probs(probs):
     return probs * (1/np.sum(probs))
 # Load data
