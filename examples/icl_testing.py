@@ -66,7 +66,7 @@ def cross_entropy_loss(yHat, y):
       return -np.log(1 - yHat)
 
 def normalize_probs(probs):
-    return probs * (1/np.sum(probs))
+    return probs /np.sum(probs)
 
 # Load data
 with open(args.examples, "r") as corp, open(args.labels) as targ:
@@ -110,7 +110,7 @@ for j in tqdm(range(args.iters)):
     with torch.inference_mode():
       logits = model(input_ids=input_ids).logits[:,-1].squeeze()
     preds = [logits[word_maps.index(label)].cpu() for label in unique_labels]
-    normalized_logits = normalized_probs(preds)
+    normalized_logits = normalize_probs(preds)
     label_val = np.where(unique_labels == targ_y)[0][0]
     predictions[j] = np.argmax(preds)
     targs[j] = label_val

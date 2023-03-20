@@ -65,7 +65,7 @@ def cross_entropy_loss(yHat, y):
       return -np.log(1 - yHat)
 
 def normalize_probs(probs):
-    return probs * (1/np.sum(probs))
+    return probs /np.sum(probs)
 # Load data
 with open(args.examples, "r") as corp, open(args.labels) as targ:
     data = np.array(corp.read().split("\n"))[:-1] # Change this based on how annoying your files are
